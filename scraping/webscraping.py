@@ -31,12 +31,15 @@ def extrair_dados_tabela(page):
     dados = []
     
     try:
-        tabela = page.locator('tbody')
-        linhas = tabela.locator('tr').element_handles()  # Obtém uma lista de ElementHandle (linhas)
+        tabela = page.locator("table[id='lista-turmas']")  
+        headTabela = tabela.locator('thead')
+        linhasHead = headTabela.locator('tr').element_handles() 
+        corpoTabela = tabela.locator('tbody')
+        linhasCorpo = corpoTabela.locator('tr').element_handles() 
         
         disciplina = ""
         
-        for linha in linhas:
+        for linha in linhasCorpo:
             # Verifica se a linha contém uma nova disciplina
             disciplina_element = linha.query_selector('td[colspan="17"]')
             if disciplina_element:
@@ -71,7 +74,26 @@ def extrair_dados_tabela(page):
         return []
 
 
-def aplicar_filtros(page, filtros):
+def aplicar_filtros(page):
+    # Filtros a serem aplicados
+    # As propriedades representam os IDs dos selects da página de consultar turmas.
+    # Os valores das propriedades representam a opção a ser escolhida naquele select.
+    filtros = {
+        'form:checkModalidade': {  
+            'form:selectModalidadeEducacao': 'PRESENCIAL',
+        },
+        'form:checkModalidadeTurma': {
+            'form:selectModalidadeTurmaEducacao': 'PRESENCIAL',
+        },
+        'form:checkCentro': {
+            'form:centros': 'CENTRO DE CIÊNCIAS EXATAS E TECNOLOGIA',  
+        },
+        'form:checkDepartamento': {
+            'form:departamentos': 'DEPARTAMENTO DE COMPUTAÇÃO - São Cristóvão' 
+        },
+        # 'form:checkRel': ''
+    }
+
     for check_id, selects in filtros.items():
         try:
             # Marcar o checkbox
@@ -166,26 +188,8 @@ def login_sigaa(playwright):
     except Exception as e:
         print(f"Erro ao clicar em 'Consultar Turma': {e}")
 
-    # Filtros a serem aplicados
-    # As propriedades representam os IDs dos selects da página de consultar turmas.
-    # Os valores das propriedades representam a opção a ser escolhida naquele select.
-    filtros = {
-        'form:checkModalidade': {  
-            'form:selectModalidadeEducacao': 'PRESENCIAL',
-        },
-        'form:checkModalidadeTurma': {
-            'form:selectModalidadeTurmaEducacao': 'PRESENCIAL',
-        },
-        'form:checkCentro': {
-            'form:centros': 'CENTRO DE CIÊNCIAS EXATAS E TECNOLOGIA',  
-        },
-        'form:checkDepartamento': {
-            'form:departamentos': 'DEPARTAMENTO DE COMPUTAÇÃO - São Cristóvão' 
-        },
-        # 'form:checkRel': ''
-    }
     # Aplicar filtros
-    aplicar_filtros(page, filtros)
+    aplicar_filtros(page)
 
     time.sleep(3)
 
