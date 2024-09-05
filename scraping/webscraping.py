@@ -1,4 +1,4 @@
-import time  # Para usar o sleep
+import time 
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import os
@@ -6,7 +6,7 @@ import csv
 
 load_dotenv()
 
-def salvar_dados_em_csv(dados, nome_arquivo='dados_tabela.csv'):
+def salvar_dados_em_csv(dados, nome_arquivo='data/dados_tabela.csv'):
     try:
         with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
@@ -127,7 +127,7 @@ def aplicar_filtros(page):
     except Exception as e:
         print(f"Erro ao clicar no botão 'Buscar': {e}")
 
-def login_sigaa(playwright):
+def main(playwright):
 
     usuario = os.getenv('SIGAA_USUARIO')
     senha = os.getenv('SIGAA_SENHA')
@@ -191,8 +191,6 @@ def login_sigaa(playwright):
     # Aplicar filtros
     aplicar_filtros(page)
 
-    time.sleep(3)
-
     dados = extrair_dados_tabela(page)
 
     salvar_dados_em_csv(dados)
@@ -200,9 +198,6 @@ def login_sigaa(playwright):
     browser.close()
 
 
-def main():
-    with sync_playwright() as playwright:
-        login_sigaa(playwright)
-
 if __name__ == "__main__":
-    main()
+    with sync_playwright() as playwright:
+        main(playwright)
