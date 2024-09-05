@@ -2,8 +2,64 @@ import time  # Para usar o sleep
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import os
+import csv
 
 load_dotenv()
+
+def extrair_dados_tabela(page):
+    try:
+        # Nome do arquivo CSV onde os dados serão salvos
+        nome_arquivo = 'dados_tabela.csv'
+        
+        # Abrindo o arquivo CSV em modo de escrita
+        with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+
+            # Escreve o cabeçalho no CSV
+            writer.writerow([
+                'Disciplina', 'Semestre', 'Turma', 'Docente', 'Situação', 
+                'Modalidade', 'Status', 'Código e Horário', 
+                'Local', 'Alunos'
+            ])
+
+            # Localiza todas as linhas da tabela (tr) que contêm dados
+            tabela = page.locator('tbody')
+            linhas = tabela.locator('tr').element_handles()  # Obtém uma lista de ElementHandle (linhas)
+            
+            disciplina = ""
+            
+            for linha in linhas:
+                # Verifica se a linha contém uma nova disciplina
+                disciplina_element = linha.query_selector('td[colspan="17"]')
+                if disciplina_element:
+                    # Extrai o nome da disciplina
+                    disciplina = disciplina_element.inner_text().split(' - ')[1].strip()
+                    continue  # Pula para a próxima linha
+                
+                # Extrai os dados de uma turma
+                dados_turma = linha.query_selector_all('td')
+                
+                if dados_turma and len(dados_turma) >= 9:
+                    # Coletar os dados da linha atual
+                    semestre = dados_turma[0].inner_text().strip()
+                    turma = dados_turma[1].inner_text().strip()
+                    docente = dados_turma[2].inner_text().strip()
+                    situacao = dados_turma[3].inner_text().strip()
+                    modalidade = dados_turma[4].inner_text().strip()
+                    status = dados_turma[5].inner_text().strip()
+                    horario = dados_turma[6].inner_text().strip()
+                    local = dados_turma[7].inner_html().strip().replace('<br>', ' / ')
+                    alunos = dados_turma[8].inner_text().strip()
+
+                    # Escreve os dados da turma no arquivo CSV
+                    writer.writerow([
+                        disciplina, semestre, turma, docente, situacao, 
+                        modalidade, status, horario, local, alunos
+                    ])
+        print(f"Dados extraídos e salvos em '{nome_arquivo}' com sucesso.")
+    except Exception as e:
+        print(f"Ocorreu um erro ao extrair os dados: {e}")
+
 
 def aplicar_filtros(page, filtros):
     for check_id, selects in filtros.items():
@@ -16,6 +72,10 @@ def aplicar_filtros(page, filtros):
             else:
                 print(f"Checkbox '{check_id}' já estava marcado.")
             
+            # Verifica se o id do checkbox é 'form:checkRel', se for, pula o preenchimento dos selects
+            if check_id == 'form:checkRel':
+                continue  # Pula para o próximo checkbox
+
             # Preencher os selects relacionados ao checkbox
             for select_id, valor in selects.items():
                 try:
@@ -111,13 +171,18 @@ def login_sigaa(playwright):
         },
         'form:checkDepartamento': {
             'form:departamentos': 'DEPARTAMENTO DE COMPUTAÇÃO - São Cristóvão' 
-        }
+        },
+        # 'form:checkRel': ''
     }
     # Aplicar filtros
     aplicar_filtros(page, filtros)
 
+    time.sleep(3)
 
-    time.sleep(60)
+
+    extrair_dados_tabela(page)
+
+    # time.sleep(60)
 
     # Fecha o navegador
     browser.close()
