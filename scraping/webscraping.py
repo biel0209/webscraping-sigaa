@@ -6,59 +6,69 @@ import csv
 
 load_dotenv()
 
-def extrair_dados_tabela(page):
+def salvar_dados_em_csv(dados, nome_arquivo='dados_tabela.csv'):
     try:
-        # Nome do arquivo CSV onde os dados serão salvos
-        nome_arquivo = 'dados_tabela.csv'
-        
-        # Abrindo o arquivo CSV em modo de escrita
         with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-
+            
             # Escreve o cabeçalho no CSV
             writer.writerow([
                 'Disciplina', 'Semestre', 'Turma', 'Docente', 'Situação', 
                 'Modalidade', 'Status', 'Código e Horário', 
                 'Local', 'Alunos'
             ])
-
-            # Localiza todas as linhas da tabela (tr) que contêm dados
-            tabela = page.locator('tbody')
-            linhas = tabela.locator('tr').element_handles()  # Obtém uma lista de ElementHandle (linhas)
             
-            disciplina = ""
+            # Escreve os dados no CSV
+            writer.writerows(dados)
             
-            for linha in linhas:
-                # Verifica se a linha contém uma nova disciplina
-                disciplina_element = linha.query_selector('td[colspan="17"]')
-                if disciplina_element:
-                    # Extrai o nome da disciplina
-                    disciplina = disciplina_element.inner_text().split(' - ')[1].strip()
-                    continue  # Pula para a próxima linha
-                
-                # Extrai os dados de uma turma
-                dados_turma = linha.query_selector_all('td')
-                
-                if dados_turma and len(dados_turma) >= 9:
-                    # Coletar os dados da linha atual
-                    semestre = dados_turma[0].inner_text().strip()
-                    turma = dados_turma[1].inner_text().strip()
-                    docente = dados_turma[2].inner_text().strip()
-                    situacao = dados_turma[3].inner_text().strip()
-                    modalidade = dados_turma[4].inner_text().strip()
-                    status = dados_turma[5].inner_text().strip()
-                    horario = dados_turma[6].inner_text().strip()
-                    local = dados_turma[7].inner_html().strip().replace('<br>', ' / ')
-                    alunos = dados_turma[8].inner_text().strip()
+        print(f"Dados salvos em '{nome_arquivo}' com sucesso.")
+    except Exception as e:
+        print(f"Ocorreu um erro ao salvar os dados em CSV: {e}")
 
-                    # Escreve os dados da turma no arquivo CSV
-                    writer.writerow([
-                        disciplina, semestre, turma, docente, situacao, 
-                        modalidade, status, horario, local, alunos
-                    ])
-        print(f"Dados extraídos e salvos em '{nome_arquivo}' com sucesso.")
+
+def extrair_dados_tabela(page):
+
+    dados = []
+    
+    try:
+        tabela = page.locator('tbody')
+        linhas = tabela.locator('tr').element_handles()  # Obtém uma lista de ElementHandle (linhas)
+        
+        disciplina = ""
+        
+        for linha in linhas:
+            # Verifica se a linha contém uma nova disciplina
+            disciplina_element = linha.query_selector('td[colspan="17"]')
+            if disciplina_element:
+                # Extrai o nome da disciplina
+                disciplina = disciplina_element.inner_text().split(' - ')[1].strip()
+                continue  # Pula para a próxima linha
+            
+            # Extrai os dados de uma turma
+            dados_turma = linha.query_selector_all('td')
+            
+            if dados_turma and len(dados_turma) >= 9:
+                # Coletar os dados da linha atual
+                semestre = dados_turma[0].inner_text().strip()
+                turma = dados_turma[1].inner_text().strip()
+                docente = dados_turma[2].inner_text().strip()
+                situacao = dados_turma[3].inner_text().strip()
+                modalidade = dados_turma[4].inner_text().strip()
+                status = dados_turma[5].inner_text().strip()
+                horario = dados_turma[6].inner_text().strip()
+                local = dados_turma[7].inner_html().strip().replace('<br>', ' / ')
+                alunos = dados_turma[8].inner_text().strip()
+
+                # Adiciona os dados da turma à lista
+                dados.append([
+                    disciplina, semestre, turma, docente, situacao, 
+                    modalidade, status, horario, local, alunos
+                ])
+                
+        return dados
     except Exception as e:
         print(f"Ocorreu um erro ao extrair os dados: {e}")
+        return []
 
 
 def aplicar_filtros(page, filtros):
@@ -179,13 +189,12 @@ def login_sigaa(playwright):
 
     time.sleep(3)
 
+    dados = extrair_dados_tabela(page)
 
-    extrair_dados_tabela(page)
+    salvar_dados_em_csv(dados)
 
-    # time.sleep(60)
-
-    # Fecha o navegador
     browser.close()
+
 
 def main():
     with sync_playwright() as playwright:
