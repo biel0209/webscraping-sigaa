@@ -131,8 +131,16 @@ def aplicar_filtros(page, logs, params):
         # Selecionar componente curricular
         row = page.locator("tr:has(label:text('Componente Curricular'))")
         select_element = row.locator("td >> nth=1 select")
-        select_element.select_option(label=componenteCurricular)
-        logs.append(f"Filtro 'Componente Curricular' selecionado com valor '{componenteCurricular}'.")
+        # Obtém todas as opções do <select>
+        options = select_element.locator("option")
+        count = options.count()
+        # Itera pelas opções e verifica se o texto contém o valor desejado
+        for i in range(count):
+            option_text = options.nth(i).text_content()
+            if componenteCurricular in option_text:  # Verifica se contém o texto
+                options.nth(i).click()  # Seleciona a opção
+                logs.append(f"Filtro 'Componente Curricular' selecionado com valor '{componenteCurricular}'.")
+                break
         
         # Preencher ano e período
         page.locator(f'input[id="form:inputAno"]').fill(ano)
